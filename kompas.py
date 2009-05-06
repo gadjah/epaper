@@ -1,8 +1,8 @@
 #!/usr/bin/python
 
 """
-__version__ = "$Revision: 0.1 $"
-__date__ = "$Date: 2009/05/04 $"
+__version__ = "$Revision: 0.4 $"
+__date__ = "$Date: 2009/05/03 $"
 """
 
 from PIL import Image
@@ -24,51 +24,54 @@ def main():
 	log(mainPage)
 	page = opener.open(mainPage)
 	html = page.read()
-	
-	iid = re.compile('iid:([^,]+)').findall(html)
-	if not iid:
-		log("iid=0")
-		sys.exit(1)
-	
-	indexPage = "http://%s.realviewusa.com/global/loadconfig.aspx?fetch=2&i=&iguid=&xml&iid=%s&index=&rnd=0.1" % (prefix, iid[0])
-	log(indexPage)
-	page = opener.open(indexPage)
-	html = page.read()
-	
-	allIssue = re.compile('<BackIssue id="(\d+?)" sysname="[^"]+" name="[^"]+" path="([^"]+)" issuedate="([^"]+)" thumbnail="[^"]+"/>').findall(html)
-	if not allIssue:
-		log("issue=0")
-		sys.exit(1)
-		
-	for item in allIssue:
-		log(item[0])
-		if iid[0] != item[0]:
-			indexPage = "http://%s.realviewusa.com/global/loadconfig.aspx?fetch=2&i=&iguid=&xml&iid=%s&index=&rnd=0.1" % (prefix, item[0])
-			log(indexPage)
-			page = opener.open(indexPage)
+	xml = re.compile('<span class="teaserText"><a href="([^"]+)">([^<]+)</a></span>').findall(html)	
+			
+	for item in xml:
+		if item[0] != mainPage:
+			log(item[0])
+			page = opener.open(item[0])
 			html = page.read()
 
-		dDate = re.compile('(\w{3})\s+?(\d{1,2})\s+?(\d{4})').findall(item[2])
+		stringPage = re.sub("Kompas Daily|Bagian ", "", item[1]) 
+		if stringPage:
+			stringPage = re.sub("\s", "_", stringPage).lower() + "_"
+			
+		iid = re.compile('iid:([^,]+)').findall(html)
+		if not iid:
+			log("iid=0")
+			sys.exit(1)
+		
+		dDate = re.compile("i:'([^']+)'").findall(html)
 		if not dDate:
 			log("date=0")
 			sys.exit(1)		
 		
-		fDate = "%s-%s-%s" %(dDate[0][2], getMonth(dDate[0][0]), ("00" + dDate[0][1])[-2:])
+		fDate = "%s-%s-%s" %(dDate[0][-4:], str(getMonth(dDate[0][-8:-5])), dDate[0][0:2])
+		indexPage = "http://%s.realviewusa.com/global/loadconfig.aspx?fetch=2&i=&iguid=&xml&iid=%s&index=&rnd=0.1" % (prefix, iid[0])
+		log(indexPage)
+		page = opener.open(indexPage)
+		html = page.read()
 		pageCount = re.compile('pagecount="(\d+)"').findall(html)
 		
 		if not pageCount:
 			log("pageCount=0")
 			sys.exit(1)	
 		
-		stringDir = item[1].replace(' ', '%20')
-		Url = "http://content.%s.realviewusa.com/djvu%s" % (prefix, stringDir)
+		stringDir = re.compile('path="([^"]+)"').findall(html)
+		
+		if not stringDir:
+			log("Dir=0")
+			sys.exit(1)
+			
+		Dir = re.sub("\s", '%20', stringDir[0])
+		Url = "http://content.%s.realviewusa.com/djvu%s" % (prefix, Dir)
 	
 		if not os.path.exists(fDate):
 			os.mkdir(fDate)
 	
 		for x in range(1, int(pageCount[0]) + 1):
-			s = ("000000" + str(x))[-7:]
-			outFile = '%s/%s_%s_%s.jpg' % (fDate, prefix, fDate, s)
+			s = "%07d" % (x)
+			outFile = '%s/%s_%s%s_%s.jpg' % (fDate, prefix, stringPage, fDate, s)
 			
 			if not os.path.exists(outFile):
 				log("Download %s" %(s))
@@ -82,7 +85,6 @@ def main():
 					jpg = opener.open(jpgUrl)
 					djpg = jpg.read()
 					imageStringJpg = StringIO.StringIO(djpg)
-					imageStringJpg.seek(0)
 				except urllib2.HTTPError, e:
 					imageStringJpg = ''
 					log("Error %s" % (e))
@@ -94,7 +96,6 @@ def main():
 					png = opener.open(pngUrl)
 					dpng  = png.read()
 					imageStringPng = StringIO.StringIO(dpng)
-					imageStringPng.seek(0)
 				except urllib2.HTTPError, e:
 					imageStringPng = ''
 					log("Error %s" % (e))
@@ -113,13 +114,12 @@ def main():
 				log("Skip %s" % (outFile))
 	
 		if ZIP == 1:
-			zipFile = "%s_%s.zip" % (prefix, fDate)
+			zipFile = "%s_%s%s.zip" % (prefix, stringPage, fDate)
 			log("Create %s" %(zipFile)) 
-			#zip = zipfile.ZipFile(zipFile, mode="w", compression=8, allowZip64=True)
-			zip = zipfile.ZipFile(zipFile, mode="w", compression=8) 
+			zip = zipfile.ZipFile(zipFile, mode="w", compression=8, allowZip64=True) 
 			for x in range(1, int(pageCount[0]) + 1):
-				s = ("000000" + str(x))[-7:]
-				outFile = '%s/%s_%s_%s.jpg' % (fDate, prefix, fDate, s)
+				s = "%07d" % (x)
+				outFile = '%s/%s_%s%s_%s.jpg' % (fDate, prefix, stringPage, fDate, s)
 				try:
 					zip.write(outFile)
 				except OSError, e:
