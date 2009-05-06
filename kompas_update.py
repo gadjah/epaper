@@ -68,7 +68,6 @@ def main():
 	
 		for x in range(1, int(pageCount[0]) + 1):
 			s = "%07d" % (x)
-			print s
 			outFile = '%s/%s_%s_%s.jpg' % (fDate, prefix, fDate, s)
 			
 			if not os.path.exists(outFile):
