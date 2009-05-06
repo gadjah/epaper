@@ -58,7 +58,7 @@ def main():
 	for x in pageCount:
 		indexFile = pageDict[x[0][-2:]]
 		Url = "http://versipdf.%s.co.id/%s%s" % (prefix, indexFile, x[1])
-		outFile = '%s/%s_%s_%s.pdf' % (fDate, prefix, fDate, ("00" + x[2])[-2:])
+		outFile = '%s/%s_%s_%02d.pdf' % (fDate, prefix, fDate, int(x[2]))
 		log(Url)
 		pageUrl = opener.open(Url)
 		
@@ -83,7 +83,7 @@ def main():
 		outFilePdf = "%s/%s_%s.pdf" %(fDate, prefix, fDate)
 		log("Create %s" % (outFilePdf))
 		for x in pageCount:
-			outFile = '%s/%s_%s_%s.pdf' % (fDate, prefix, fDate, ("00" + x[2])[-2:])
+			outFile = '%s/%s_%s_%02d.pdf' % (fDate, prefix, fDate, int(x[2]))
 			inStream = file(outFile, 'rb')
 			inPdf = pyPdf.PdfFileReader(inStream)
 			totalPage = 0
@@ -106,7 +106,7 @@ def main():
 		log("Create %s" %(zipFile)) 
 		zip = zipfile.ZipFile(zipFile, mode="w", compression=8, allowZip64=True) 
 		for x in pageCount:
-			outFile = '%s/%s_%s_%s.pdf' % (fDate, prefix, fDate, ("00" + x[2])[-2:])
+			outFile = '%s/%s_%s_%02d.pdf' % (fDate, prefix, fDate, int(x[2]))
 			zip.write(outFile)
 		zip.close()
 		
