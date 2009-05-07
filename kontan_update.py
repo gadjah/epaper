@@ -14,7 +14,7 @@ import zipfile
 import re
 
 ZIP = 1
-prefix = "kompas"
+prefix = "kontan"
 
 def main():
 	#proxy = urllib2.ProxyHandler({'http': 'www-proxy.com:8080'})
@@ -25,21 +25,23 @@ def main():
 	page = opener.open(mainPage)
 	html = page.read()
 	
-	listXML = re.compile('<span class="teaserText"><a href="([^"]+)">([^<]+)</a></span>').findall(html)
+	listXML = re.compile("""contentCode = DoGetContent\(([^,]+),([^,]+),([^\)]+)\)""").findall(html)
 	if not listXML:
 		log("xml=0")
 		sys.exit(1)
-		
+	
 	for xml in listXML:
-		if xml[0] != mainPage:
-			log(xml[0])
-			page = opener.open(xml[0])
+		xmlPage = "http://%s.realviewusa.com/?xml=%s.xml" % (prefix, xml[1].strip('\'|"'))
+		log(xmlPage)
+		if xmlPage != mainPage:
+			log(xml[1])
+			page = opener.open(xmlPage)
 			html = page.read()
 
-		stringPage = re.sub("Kompas Daily|Bagian ", "", xml[1]) 
+		stringPage = re.sub("Kontan Daily|Bagian |'|\"", "", xml[2]) 
 		if stringPage:
-			stringPage = re.sub("\s", "_", stringPage).lower() + "_"
-			
+			stringPage = re.sub("\s", "_", stringPage).lower() + "_"			
+
 		iid = re.compile('iid:([^,]+)').findall(html)
 		if not iid:
 			log("iid=0")
