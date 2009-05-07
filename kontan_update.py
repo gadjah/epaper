@@ -12,6 +12,7 @@ import os
 import sys
 import zipfile
 import re
+import time
 
 ZIP = 1
 prefix = "kontan"
@@ -32,8 +33,8 @@ def main():
 	
 	for xml in listXML:
 		xmlPage = "http://%s.realviewusa.com/?xml=%s.xml" % (prefix, xml[1].strip('\'|"'))
-		log(xmlPage)
 		if xmlPage != mainPage:
+			log(xmlPage)
 			log(xml[1])
 			page = opener.open(xmlPage)
 			html = page.read()
@@ -145,7 +146,7 @@ def main():
 	log("\n-")
 		
 def log(str):
-	print ">>> %s" %(str)
+	print "%s >>> %s" % (time.strftime("%x - %X", time.localtime()), str)
 	
 def getMonth(month):
 	dict = {'Jan': "01", 'Feb': "02", 'Mar': "03", 'Apr': "04", 'May': "05", 'Jun': "06", 'Jul': "07", 'Aug': "08", 'Sep': "09", 'Oct': "10", 'Nov': "11", 'Dec': "12"}

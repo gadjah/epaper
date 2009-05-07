@@ -10,6 +10,7 @@ import os
 import sys
 import zipfile
 import re
+import time
 
 ZIP = 1	
 MERGE = 1
@@ -91,7 +92,7 @@ def main():
 	log("\n-")
 		
 def log(str):
-	print ">>> %s" %(str)
+	print "%s >>> %s" % (time.strftime("%x - %X", time.localtime()), str)
 	
 if __name__ == '__main__':
 	main()

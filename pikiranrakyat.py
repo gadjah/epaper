@@ -10,6 +10,7 @@ import os
 import sys
 import zipfile
 import re
+import time
 
 ZIP = 1	
 prefix = "pikiran-rakyat"
@@ -74,7 +75,7 @@ def main():
 	log("\n-")
 		
 def log(str):
-	print ">>> %s" %(str)
+	print "%s >>> %s" % (time.strftime("%x - %X", time.localtime()), str)
 	
 def getMonth(month):
 	dict = {'Januari': "01", 'Februari': "02", 'Maret': "03", 'April': "04", 'Mei': "05", 'Juni': "06", 'Juli': "07", 'Agustus': "08", 'September': "09", 'Oktober': "10", 'November': "11", 'Desember': "12"}
