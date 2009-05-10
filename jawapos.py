@@ -41,28 +41,26 @@ def main():
 	pageDict = {}
 	for item in pageLink:
 		pageDict[item[0][-2:]] = item[1]
-		
-	sDate = re.compile('<font class="ftgl"  >\w+, (\d+) (\w+) (\d+)<\/font>').findall(html)
-	if not sDate:
-		log("date=0")
-		sys.exit(1)
-	
-	date = sDate[0][0]
-	month = getMonth(sDate[0][1])
-	year = sDate[0][2]
-		
-	fDate = "%s-%s-%s" %(year, month, date)
-	
-	if not os.path.exists(fDate):
-		os.mkdir(fDate)
+
+	sDate = []
 	
 	for x in pageCount:
 		indexFile = pageDict[x[0][-2:]]
 		Url = "http://versipdf.%s.co.id/%s%s" % (prefix, indexFile, x[1])
-		outFile = '%s/%s_%s_%02d.pdf' % (fDate, prefix, fDate, int(x[2]))
 		log(Url)
 		pageUrl = opener.open(Url)
 		
+		if not sDate:
+			if pageUrl.headers.items()[8][0] == 'date':
+				sDate = re.compile('\S+ (\S+) (\S+) (\S+) \S+ GMT').findall(pageUrl.headers.items()[8][1])
+			else:
+				sDate.append((time.strftime('%d', time.localtime()), time.strftime('%b', time.localtime()), time.strftime('%Y', time.localtime())))
+			fDate = "%s-%s-%s" %(sDate[0][2], getMonth(sDate[0][1]), sDate[0][0]) 
+			
+			if not os.path.exists(fDate):
+				os.mkdir(fDate)
+			
+		outFile = '%s/%s_%s_%02d.pdf' % (fDate, prefix, fDate, int(x[2]))
 		if os.path.exists(outFile):
 			#content-length
 			if pageUrl.headers.items()[0][1].isdigit():
@@ -117,7 +115,7 @@ def log(str):
 	print "%s >>> %s" % (time.strftime("%x - %X", time.localtime()), str)
 	
 def getMonth(month):
-	dict = {'Januari': "01", 'Februari': "02", 'Maret': "03", 'April': "04", 'Mei': "05", 'Juni': "06", 'Juli': "07", 'Agustus': "08", 'September': "09", 'Oktober': "10", 'November': "11", 'Desember': "12"}
+	dict = {'January': "01", 'February': "02", 'Marc': "03", 'April': "04", 'May': "05", 'June': "06", 'July': "07", 'August': "08", 'September': "09", 'October': "10", 'November': "11", 'December': "12"}
 	return dict[month]
 
 if __name__ == '__main__':
