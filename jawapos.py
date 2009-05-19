@@ -90,7 +90,7 @@ def main():
 	if merge:
 		import pyPdf
 		outPdf = pyPdf.PdfFileWriter()
-		outFilePdf = "%s%s/%s_%s.pdf" %(dir, fDate, prefiFile, fDate)
+		outFilePdf = "%s%s/%s_%s.pdf" %(dir, fDate, prefixFile, fDate)
 		log("Create %s" % (outFilePdf))
 		for x in pageCount:
 			outFile = '%s%s/%s_%s_%02d.pdf' % (dir, fDate, filePrefix, fDate, int(x[2]))
