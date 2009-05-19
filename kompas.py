@@ -1,8 +1,8 @@
 #!/usr/bin/python
 
 """
-__version__ = "$Revision: 0.4 $"
-__date__ = "$Date: 2009/05/03 $"
+__version__ = "$Revision: 0.5 $"
+__date__ = "$Date: 2009/05/19 $"
 """
 
 from PIL import Image
@@ -13,27 +13,37 @@ import sys
 import zipfile
 import re
 import time
+import optparse
 
-ZIP = 1
-prefix = "kompas"
+web = "kompas"
 
 def main():
+	cmd = optparse.OptionParser()
+	cmd.add_option("-d", "--dir", dest="dir", default=web)
+	cmd.add_option("-p", "--prefix", dest="filePrefix", default=web)
+	cmd.add_option("-z", "--zip", action="store_true", dest="zip", default=False)
+	(options, args) = cmd.parse_args()
+	
+	filePrefix = options.filePrefix
+	zip = options.zip
+	dir = os.path.normpath(options.dir) + '/'
+	
 	#proxy = urllib2.ProxyHandler({'http': 'www-proxy.com:8080'})
 	opener = urllib2.build_opener()
 	opener.addheaders = [('User-Agent', 'Mozilla/4.0 (compatible; MSIE 7.0b; Windows NT 6.0)')]	
-	mainPage = "http://%s.realviewusa.com/?xml=%s.xml" % (prefix, prefix)
+	mainPage = "http://%s.realviewusa.com/?xml=%s.xml" % (web, web)
 	log(mainPage)
 	page = opener.open(mainPage)
 	html = page.read()
 	xml = re.compile('<span class="teaserText"><a href="([^"]+)">([^<]+)</a></span>').findall(html)	
-			
+	
 	for item in xml:
 		if item[0] != mainPage:
 			log(item[0])
 			page = opener.open(item[0])
 			html = page.read()
 
-		stringPage = re.sub("Kompas Daily|Bagian ", "", item[1]) 
+		stringPage = re.sub("\S+ Daily|Bagian ", "", item[1]) 
 		if stringPage:
 			stringPage = re.sub("\s", "_", stringPage).lower() + "_"
 			
@@ -48,7 +58,7 @@ def main():
 			sys.exit(1)		
 		
 		fDate = "%s-%s-%s" %(dDate[0][-4:], str(getMonth(dDate[0][-8:-5])), dDate[0][0:2])
-		indexPage = "http://%s.realviewusa.com/global/loadconfig.aspx?fetch=2&i=&iguid=&xml&iid=%s&index=&rnd=0.1" % (prefix, iid[0])
+		indexPage = "http://%s.realviewusa.com/global/loadconfig.aspx?fetch=2&i=&iguid=&xml&iid=%s&index=&rnd=0.1" % (web, iid[0])
 		log(indexPage)
 		page = opener.open(indexPage)
 		html = page.read()
@@ -65,14 +75,14 @@ def main():
 			sys.exit(1)
 			
 		Dir = re.sub("\s", '%20', stringDir[0])
-		Url = "http://content.%s.realviewusa.com/djvu%s" % (prefix, Dir)
+		Url = "http://content.%s.realviewusa.com/djvu%s" % (web, Dir)
 	
-		if not os.path.exists(fDate):
-			os.mkdir(fDate)
+		if not os.path.exists(dir + fDate):
+			os.makedirs(dir + fDate)
 	
 		for x in range(1, int(pageCount[0]) + 1):
 			s = "%07d" % (x)
-			outFile = '%s/%s_%s%s_%s.jpg' % (fDate, prefix, stringPage, fDate, s)
+			outFile = '%s%s/%s_%s%s_%s.jpg' % (dir, fDate, filePrefix, stringPage, fDate, s)
 			
 			if not os.path.exists(outFile):
 				log("Download %s" %(s))
@@ -111,16 +121,17 @@ def main():
 					imageStringPng.close()
 					jpg.close()
 					png.close()
+					log(outFile)
 			else:
 				log("Skip %s" % (outFile))
-	
-		if ZIP == 1:
-			zipFile = "%s_%s%s.zip" % (prefix, stringPage, fDate)
+				
+		if zip:
+			zipFile = "%s%s_%s%s.zip" % (dir, filePrefix, stringPage, fDate)
 			log("Create %s" %(zipFile)) 
 			zip = zipfile.ZipFile(zipFile, mode="w", compression=8, allowZip64=True) 
 			for x in range(1, int(pageCount[0]) + 1):
 				s = "%07d" % (x)
-				outFile = '%s/%s_%s%s_%s.jpg' % (fDate, prefix, stringPage, fDate, s)
+				outFile = '%s%s/%s_%s%s_%s.jpg' % (dir, fDate, filePrefix, stringPage, fDate, s)
 				try:
 					zip.write(outFile)
 				except OSError, e:

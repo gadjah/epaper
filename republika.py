@@ -1,8 +1,8 @@
 #!/usr/bin/python
 
 """
-__version__ = "$Revision: 0.3 $"
-__date__ = "$Date: 2009/05/03 $"
+__version__ = "$Revision: 0.5 $"
+__date__ = "$Date: 2009/05/19 $"
 """
 
 import urllib2
@@ -11,17 +11,28 @@ import sys
 import zipfile
 import re
 import time
+import optparse
 
-ZIP = 1
-MERGE = 1
-prefix = "republika"
+web = "republika"
 
 def main():
+	cmd = optparse.OptionParser()
+	cmd.add_option("-d", "--dir", dest="dir", default=web)
+	cmd.add_option("-n", "--no-merge", action="store_false", dest="merge", default=True)
+	cmd.add_option("-p", "--prefix", dest="filePrefix", default=web)
+	cmd.add_option("-z", "--zip", action="store_true", dest="zip", default=False)
+	(options, args) = cmd.parse_args()
+	
+	filePrefix = options.filePrefix
+	zip = options.zip
+	dir = os.path.normpath(options.dir) + '/'
+	merge = options.merge
+
 	#proxy = urllib2.ProxyHandler({'http': 'www-proxy.com:8080'})
 	opener = urllib2.build_opener()
 	opener.addheaders = [('User-Agent', 'Mozilla/4.0 (compatible; MSIE 7.0b; Windows NT 6.0)')]	
 
-	mainPage = "http://67.19.80.66/%s/" % (prefix)
+	mainPage = "http://67.19.80.66/%s/" % (web)
 	log(mainPage)
 	page = opener.open(mainPage)
 	html = page.read()
@@ -36,13 +47,13 @@ def main():
 	year = pageCount[0][6:10]
 		
 	fDate = "%s-%s-%s" %(year, month, date)
-	Url = "http://%s.pressmart.com/RP/RP/%s/%s/%s/PagePrint/" % (prefix, year, month, date)
+	Url = "http://%s.pressmart.com/RP/RP/%s/%s/%s/PagePrint/" % (web, year, month, date)
 	
-	if not os.path.exists(fDate):
-		os.mkdir(fDate)
+	if not os.path.exists(dir + fDate):
+		os.makedirs(dir + fDate)
 	
 	for x in pageCount:
-		outFile = '%s/%s_%s_%s.pdf' % (fDate, prefix, fDate, x[11:14])
+		outFile = '%s%s/%s_%s_%s.pdf' % (dir, fDate, filePrefix, fDate, x[11:14])
 		page = "%s.pdf" % (x[0:14])
 		pageUrl = Url + page
 		log(pageUrl)
@@ -63,13 +74,13 @@ def main():
 		f.close()
 		pageUrl.close()
 
-	if MERGE == 1:
+	if merge:
 		import pyPdf
 		outPdf = pyPdf.PdfFileWriter()
-		outFilePdf = "%s/%s_%s.pdf" %(fDate, prefix, fDate)
+		outFilePdf = "%s%s/%s_%s.pdf" %(dir, fDate, filePrefix, fDate)
 		log("Create %s" % (outFilePdf))
 		for x in pageCount:
-			outFile = '%s/%s_%s_%s.pdf' % (fDate, prefix, fDate, x[11:14])
+			outFile = '%s%s/%s_%s_%s.pdf' % (dir, fDate, filePrefix, fDate, x[11:14])
 			inStream = file(outFile, 'rb')
 			inPdf = pyPdf.PdfFileReader(inStream)
 			if not inPdf.getIsEncrypted():
@@ -80,12 +91,12 @@ def main():
 				inStream.close()
 				outStream.close()
 
-	if ZIP == 1:
-		zipFile = "%s_%s.zip" % (prefix, fDate)
+	if zip:
+		zipFile = "%s%s_%s.zip" % (dir, filePrefix, fDate)
 		log("make %s" %(zipFile)) 
 		zip = zipfile.ZipFile(zipFile, mode="w", compression=8, allowZip64=True) 
 		for x in pageCount:
-			outFile = '%s/%s_%s_%s.pdf' % (fDate, prefix, fDate, x[11:14])
+			outFile = '%s%s/%s_%s_%s.pdf' % (dir, fDate, filePrefix, fDate, x[11:14])
 			zip.write(outFile)
 		zip.close()
 		

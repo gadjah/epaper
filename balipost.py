@@ -6,15 +6,26 @@ import sys
 import zipfile
 import re
 import time
+import optparse
 
-ZIP = 1
+web = "balipost"
 
 def main():
-	proxy = urllib2.ProxyHandler({'http': 'www-proxy.com:8080'})
+	cmd = optparse.OptionParser()
+	cmd.add_option("-d", "--dir", dest="dir", default=web)
+	cmd.add_option("-p", "--prefix", dest="filePrefix", default=web)
+	cmd.add_option("-z", "--zip", action="store_true", dest="zip", default=False)
+	(options, args) = cmd.parse_args()
+	
+	filePrefix = options.filePrefix
+	zip = options.zip
+	dir = os.path.normpath(options.dir) + '/'
+	
+	#proxy = urllib2.ProxyHandler({'http': 'www-proxy.com:8080'})
 	opener = urllib2.build_opener()
 	opener.addheaders = [('User-Agent', 'Mozilla/4.0 (compatible; MSIE 7.0b; Windows NT 6.0)')]	
 
-	mainPage = "http://epaper.balipost.com/epaper.php"
+	mainPage = "http://epaper.%s.com/epaper.php" % (web)
 	log(mainPage)
 	page = opener.open(mainPage)
 	html = page.read()
@@ -47,11 +58,11 @@ def main():
 	fDate = "%s-%s-%s" %(year, month, date)
 	Url = "http://image.issuu.com/%s/jpg/page_" % (docId[0])
 	
-	if not os.path.exists(fDate):
-		os.mkdir(fDate)
+	if not os.path.exists(dir + fDate):
+		os.makedirs(dir + fDate)
 		
 	for x in range(1, int(pageCount[0]) + 1):
-		outFile = '%s/balipost_%s_%02d.jpg' % (fDate, fDate, x)
+		outFile = '%s%s/%s_%s_%02d.jpg' % (dir, fDate, filePrefix, fDate, x)
 		page = "%s.jpg" %(str(x))
 		pageUrl = Url + page
 		log(pageUrl)
@@ -77,12 +88,12 @@ def main():
 		f.close()
 		pageUrl.close()
 		
-	if ZIP == 1:
-		zipFile = 'balipost_' + fDate + '.zip'
+	if zip:
+		zipFile = "%s%s_%s.zip" % (dir, filePrefix, fDate) 
 		log("Create %s" %(zipFile)) 
 		zip = zipfile.ZipFile(zipFile, mode="w", compression=8, allowZip64=True) 
 		for x in range(1, int(pageCount[0]) + 1):
-			outFile = '%s/balipost_%s_%02d.jpg' % (fDate, fDate, x)
+			outFile = '%s%s/%s_%s_%02d.jpg' % (dir, fDate, filePrefix, fDate, x)
 			zip.write(outFile)
 		zip.close()
 		

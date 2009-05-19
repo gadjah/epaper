@@ -11,16 +11,26 @@ import sys
 import zipfile
 import re
 import time
+import optparse
 
-ZIP = 1	
-prefix = "pikiran-rakyat"
+web = "pikiran-rakyat"
 
 def main():
+	cmd = optparse.OptionParser()
+	cmd.add_option("-d", "--dir", dest="dir", default=web)
+	cmd.add_option("-p", "--prefix", dest="filePrefix", default=web)
+	cmd.add_option("-z", "--zip", action="store_true", dest="zip", default=False)
+	(options, args) = cmd.parse_args()
+	
+	filePrefix = options.filePrefix
+	zip = options.zip
+	dir = os.path.normpath(options.dir) + '/'
+	
 	#proxy = urllib2.ProxyHandler({'http': 'www-proxy.com:8080'})
 	opener = urllib2.build_opener()
 	opener.addheaders = [('User-Agent', 'Mozilla/4.0 (compatible; MSIE 7.0b; Windows NT 6.0)')]	
 
-	mainPage = "http://epaper.%s.com" % (prefix)
+	mainPage = "http://epaper.%s.com" % (web)
 	log(mainPage)
 	page = opener.open(mainPage)
 	html = page.read()
@@ -35,14 +45,14 @@ def main():
 	year = pageCount[0][0]
 		
 	fDate = "%s-%s-%s" %(year, month, date)
-	Url = "http://epaper.%s.com/images/flippingbook/PR/" % (prefix)
+	Url = "http://epaper.%s.com/images/flippingbook/PR/" % (web)
 	
-	if not os.path.exists(fDate):
-		os.mkdir(fDate)
+	if not os.path.exists(dir + fDate):
+		os.makedirs(dir + fDate)
 	
 	for x in pageCount:
 		#x = '(2009', 'Mei', '030509', '01')
-		outFile = '%s/%s_%s_%s.jpg' % (fDate, prefix, fDate, x[3])
+		outFile = '%s%s/%s_%s_%s.jpg' % (dir, fDate, filePrefix, fDate, x[3])
 		page = "%s/%s/%s/%s_zoom_%s.jpg" % (x[0], x[1], x[2], x[2], x[3])
 		pageUrl = Url + page
 		log(pageUrl)
@@ -63,12 +73,12 @@ def main():
 		f.close()
 		pageUrl.close()
 
-	if ZIP == 1:
-		zipFile = "%s_%s.zip" % (prefix, fDate)
+	if zip:
+		zipFile = "%s%s_%s.zip" % (dir, filePrefix, fDate)
 		log("Create %s" % (zipFile)) 
 		zip = zipfile.ZipFile(zipFile, mode="w", compression=8, allowZip64=True) 
 		for x in pageCount:
-			outFile = '%s/%s_%s_%s.jpg' % (fDate, prefix, fDate, x[3])
+			outFile = '%s%s/%s_%s_%s.jpg' % (dir, fDate, filePrefix, fDate, x[3])
 			zip.write(outFile)
 		zip.close()
 		

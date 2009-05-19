@@ -1,8 +1,8 @@
 #!/usr/bin/python
 
 """
-__version__ = "$Revision: 0.4 $"
-__date__ = "$Date: 2009/05/03 $"
+__version__ = "$Revision: 0.5 $"
+__date__ = "$Date: 2009/05/19 $"
 """
 
 import urllib2
@@ -11,17 +11,28 @@ import sys
 import re
 import zipfile
 import time
+import optparse
 
-ZIP = 1
-MERGE = 1
-prefix = "jawapos"
+web = "jawapos"
 
 def main():
+	cmd = optparse.OptionParser()
+	cmd.add_option("-d", "--dir", dest="dir", default=web)
+	cmd.add_option("-n", "--no-merge", action="store_false", dest="merge", default=True)
+	cmd.add_option("-p", "--prefix", dest="filePrefix", default=web)
+	cmd.add_option("-z", "--zip", action="store_true", dest="zip", default=False)
+	(options, args) = cmd.parse_args()
+	
+	filePrefix = options.filePrefix
+	zip = options.zip
+	dir = os.path.normpath(options.dir) + '/'
+	merge = options.merge
+	
 	#proxy = urllib2.ProxyHandler({'http': 'www-proxy.com:8080'})
 	opener = urllib2.build_opener()
 	opener.addheaders = [('User-Agent', 'Mozilla/4.0 (compatible; MSIE 7.0b; Windows NT 6.0)')]	
 
-	mainPage = "http://versipdf.%s.co.id/" % (prefix)
+	mainPage = "http://versipdf.%s.co.id/" % (web)
 	log(mainPage)
 	page = opener.open(mainPage)
 	html = page.read()
@@ -46,7 +57,7 @@ def main():
 	
 	for x in pageCount:
 		indexFile = pageDict[x[0][-2:]]
-		Url = "http://versipdf.%s.co.id/%s%s" % (prefix, indexFile, x[1])
+		Url = "http://versipdf.%s.co.id/%s%s" % (web, indexFile, x[1])
 		log(Url)
 		pageUrl = opener.open(Url)
 		
@@ -57,10 +68,10 @@ def main():
 				sDate.append((time.strftime('%d', time.localtime()), time.strftime('%b', time.localtime()), time.strftime('%Y', time.localtime())))
 			fDate = "%s-%s-%s" %(sDate[0][2], getMonth(sDate[0][1]), sDate[0][0]) 
 			
-			if not os.path.exists(fDate):
-				os.mkdir(fDate)
+			if not os.path.exists(dir + fDate):
+				os.makedirs(dir + fDate)
 			
-		outFile = '%s/%s_%s_%02d.pdf' % (fDate, prefix, fDate, int(x[2]))
+		outFile = '%s%s/%s_%s_%02d.pdf' % (dir, fDate, filePrefix, fDate, int(x[2]))
 		if os.path.exists(outFile):
 			#content-length
 			if pageUrl.headers.items()[0][1].isdigit():
@@ -76,13 +87,13 @@ def main():
 		f.close()
 		pageUrl.close()
 		
-	if MERGE == 1:
+	if merge:
 		import pyPdf
 		outPdf = pyPdf.PdfFileWriter()
-		outFilePdf = "%s/%s_%s.pdf" %(fDate, prefix, fDate)
+		outFilePdf = "%s%s/%s_%s.pdf" %(dir, fDate, prefiFile, fDate)
 		log("Create %s" % (outFilePdf))
 		for x in pageCount:
-			outFile = '%s/%s_%s_%02d.pdf' % (fDate, prefix, fDate, int(x[2]))
+			outFile = '%s%s/%s_%s_%02d.pdf' % (dir, fDate, filePrefix, fDate, int(x[2]))
 			inStream = file(outFile, 'rb')
 			inPdf = pyPdf.PdfFileReader(inStream)
 			totalPage = 0
@@ -100,12 +111,12 @@ def main():
 				inStream.close()
 				outStream.close()
 	
-	if ZIP == 1:
-		zipFile = "%s_%s.zip" % (prefix, fDate)
+	if zip:
+		zipFile = "%s%s_%s.zip" % (dir, filePrefix, fDate)
 		log("Create %s" %(zipFile)) 
 		zip = zipfile.ZipFile(zipFile, mode="w", compression=8, allowZip64=True) 
 		for x in pageCount:
-			outFile = '%s/%s_%s_%02d.pdf' % (fDate, prefix, fDate, int(x[2]))
+			outFile = '%s%s/%s_%s_%02d.pdf' % (dir, fDate, filePrefix, fDate, int(x[2]))
 			zip.write(outFile)
 		zip.close()
 		
