@@ -1,17 +1,19 @@
 #!/usr/bin/python
 
 """
-__version__ = "$Revision: 0.3 $"
-__date__ = "$Date: 2009/05/03 $"
+__version__ = "$Revision: 0.5 $"
+__date__ = "$Date: 2009/05/19 $"
 """
 
 import urllib2
+import urllib
 import os
 import sys
 import zipfile
 import re
 import time
 import optparse
+import cookielib
 
 web = "pikiran-rakyat"
 
@@ -20,21 +22,44 @@ def main():
 	cmd.add_option("-d", "--dir", dest="dir", default=web)
 	cmd.add_option("-p", "--prefix", dest="filePrefix", default=web)
 	cmd.add_option("-z", "--zip", action="store_true", dest="zip", default=False)
+	cmd.add_option("-u", "--user", dest="user")
+	cmd.add_option("-q", "--password", dest="password")
 	(options, args) = cmd.parse_args()
+
+	if not (options.user and options.password):
+		sys.exit(1)
 	
 	filePrefix = options.filePrefix
 	zip = options.zip
-	dir = os.path.normpath(options.dir) + '/'
-	
-	#proxy = urllib2.ProxyHandler({'http': 'www-proxy.com:8080'})
-	opener = urllib2.build_opener()
-	opener.addheaders = [('User-Agent', 'Mozilla/4.0 (compatible; MSIE 7.0b; Windows NT 6.0)')]	
+	dir = os.path.normpath(options.dir) + '/'		
+	user = options.user
+	password = options.password
 
+	cookie = cookielib.CookieJar()
+	#proxy = urllib2.ProxyHandler({'http': 'www-proxy.com:8080'})
+	opener = urllib2.build_opener(urllib2.HTTPRedirectHandler(), urllib2.HTTPCookieProcessor(cookie))	
+	opener.addheaders = [('User-Agent', 'Mozilla/4.0 (compatible; MSIE 7.0b; Windows NT 6.0)')]	
+	
 	mainPage = "http://epaper.%s.com" % (web)
 	log(mainPage)
 	page = opener.open(mainPage)
 	html = page.read()
 	
+	hidden = re.compile('<input type="hidden" name="([^"]+)" value="([^"]+)" />').findall(html)
+	login = {}
+	login["username"] = user
+	login["passwd"] = password
+	login["Submit"] = "Login"
+	login["remember"] = "yes"
+	
+	for item in hidden:
+		login[item[0]] = item[1]
+		
+	loginPage = "http://epaper.%s.com/index.php/component/user/" % (web)
+	data = urllib.urlencode(login)
+	page = opener.open(loginPage, data)
+	html = page.read()
+
 	pageCount = re.compile('/images/flippingbook/PR/(\d+)/(\w+)/(\d+)/\d+_zoom_(\d+).jpg').findall(html)
 	if not pageCount:
 		log("pageCount=0")
