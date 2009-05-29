@@ -32,7 +32,7 @@ def main():
 	opener = urllib2.build_opener()
 	opener.addheaders = [('User-Agent', 'Mozilla/4.0 (compatible; MSIE 7.0b; Windows NT 6.0)')]	
 
-	mainPage = "http://67.19.80.66/%s/" % (web)
+	mainPage = "http://%s.pressmart.com/default.aspx" % (web)
 	log(mainPage)
 	page = opener.open(mainPage)
 	html = page.read()
