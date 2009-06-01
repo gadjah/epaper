@@ -62,20 +62,20 @@ def main():
 		pageUrl = opener.open(Url)
 		
 		if not sDate:
-			if pageUrl.headers.items()[8][0] == 'date':
-				sDate = re.compile('\S+ (\S+) (\S+) (\S+) \S+ GMT').findall(pageUrl.headers.items()[8][1])
+			if pageUrl.headers.getheader('date'):
+				sDate = re.compile('\S+ (\S+) (\S+) (\S+) \S+ GMT').findall(pageUrl.headers.getheader('date'))
 			else:
 				sDate.append((time.strftime('%d', time.localtime()), time.strftime('%b', time.localtime()), time.strftime('%Y', time.localtime())))
 			fDate = "%s-%s-%s" %(sDate[0][2], getMonth(sDate[0][1]), sDate[0][0]) 
-			
+		
 			if not os.path.exists(dir + fDate):
 				os.makedirs(dir + fDate)
 			
 		outFile = '%s%s/%s_%s_%02d.pdf' % (dir, fDate, filePrefix, fDate, int(x[2]))
 		if os.path.exists(outFile):
 			#content-length
-			if pageUrl.headers.items()[0][1].isdigit():
-				if long(pageUrl.headers.items()[0][1]) == os.path.getsize(outFile):
+			if pageUrl.headers.getheader('Content-Length'):
+				if long(pageUrl.headers.getheader('Content-Length')) == os.path.getsize(outFile):
 					log("Skip %s" %(outFile))
 					pageUrl.close()
 					continue
@@ -126,7 +126,7 @@ def log(str):
 	print "%s >>> %s" % (time.strftime("%x - %X", time.localtime()), str)
 	
 def getMonth(month):
-	dict = {'January': "01", 'February': "02", 'Marc': "03", 'April': "04", 'May': "05", 'June': "06", 'July': "07", 'August': "08", 'September': "09", 'October': "10", 'November': "11", 'December': "12"}
+	dict = {'Jan': "01", 'Feb': "02", 'Mar': "03", 'Apr': "04", 'May': "05", 'Jun': "06", 'Jul': "07", 'Aug': "08", 'Sep': "09", 'Oct': "10", 'Nov': "11", 'Dec': "12"}
 	return dict[month]
 
 if __name__ == '__main__':
