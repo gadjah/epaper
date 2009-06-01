@@ -1,8 +1,8 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 """
-__version__ = "$Revision: 0.5 $"
-__date__ = "$Date: 2009/05/19 $"
+__version__ = "$Revision: 0.6 $"
+__date__ = "$Date: 2009/05/28 $"
 """
 
 import urllib2
@@ -14,11 +14,13 @@ import re
 import time
 import optparse
 import cookielib
+import threading
 
 web = "pikiran-rakyat"
 
 def main():
 	cmd = optparse.OptionParser()
+	cmd.add_option("-c", "--concurrent", dest="concurrent", type="int", default=1)
 	cmd.add_option("-d", "--dir", dest="dir", default=web)
 	cmd.add_option("-p", "--prefix", dest="filePrefix", default=web)
 	cmd.add_option("-z", "--zip", action="store_true", dest="zip", default=False)
@@ -27,8 +29,12 @@ def main():
 	(options, args) = cmd.parse_args()
 
 	if not (options.user and options.password):
+		print "incorrect username or password"
 		sys.exit(1)
-	
+	if options.concurrent < 1 or options.concurrent > 10:
+		concurrent = 1
+	else:
+		concurrent = options.concurrent
 	filePrefix = options.filePrefix
 	zip = options.zip
 	dir = os.path.normpath(options.dir) + '/'		
@@ -36,7 +42,6 @@ def main():
 	password = options.password
 
 	cookie = cookielib.CookieJar()
-	#proxy = urllib2.ProxyHandler({'http': 'www-proxy.com:8080'})
 	opener = urllib2.build_opener(urllib2.HTTPRedirectHandler(), urllib2.HTTPCookieProcessor(cookie))	
 	opener.addheaders = [('User-Agent', 'Mozilla/4.0 (compatible; MSIE 7.0b; Windows NT 6.0)')]	
 	
@@ -75,40 +80,50 @@ def main():
 	if not os.path.exists(dir + fDate):
 		os.makedirs(dir + fDate)
 	
+	threads = []
+	s = threading.Semaphore(concurrent)
 	for x in pageCount:
 		#x = '(2009', 'Mei', '030509', '01')
 		outFile = '%s%s/%s_%s_%s.jpg' % (dir, fDate, filePrefix, fDate, x[3])
 		page = "%s/%s/%s/%s_zoom_%s.jpg" % (x[0], x[1], x[2], x[2], x[3])
 		pageUrl = Url + page
-		log(pageUrl)
-		pageUrl = opener.open(pageUrl)
-
-		if os.path.exists(outFile):
-			#content-length
-			if pageUrl.headers.items()[0][1].isdigit():
-				if long(pageUrl.headers.items()[0][1]) == os.path.getsize(outFile):
-					log("Skip %s" %(outFile))
-					pageUrl.close()
-					continue
-					
-		log("Download %s" %(outFile))			
-		jpg = pageUrl.read()
-		f = open(outFile, "w")
-		f.write(jpg)
-		f.close()
-		pageUrl.close()
+		threads.append(threading.Thread(target=downloader, args=(opener, pageUrl, outFile, s)))
+		threads[-1].start()
+		
+	for thread in threads:
+		thread.join()
 
 	if zip:
 		zipFile = "%s%s_%s.zip" % (dir, filePrefix, fDate)
-		log("Create %s" % (zipFile)) 
-		zip = zipfile.ZipFile(zipFile, mode="w", compression=8, allowZip64=True) 
-		for x in pageCount:
-			outFile = '%s%s/%s_%s_%s.jpg' % (dir, fDate, filePrefix, fDate, x[3])
-			zip.write(outFile)
-		zip.close()
-		
+		makezip(dir + fDate, zipFile)		
 	log("\n-")
+
+def downloader(opener, url, filename, s):
+	s.acquire()
+	try:
+		page = opener.open(url)
+		if os.path.exists(filename):
+			if page.headers.getheader('Content-Length'):
+				if long(page.headers.getheader('Content-Length')) == os.path.getsize(filename):
+					log("Skip %s" % (filename))
+					pageUrl.close()
+					return
+		log("Download %s" % (filename))			
+		jpg = page.read()
+		f = open(filename, "w")
+		f.write(jpg)
+		f.close()
+		page.close()
+	finally:
+		s.release()
 		
+def makezip(dir, filename):
+	log("Create %s" % (filename)) 
+	zip = zipfile.ZipFile(filename, mode="w", compression=zipfile.ZIP_DEFLATED) 
+	for image in os.listdir(dir):
+		zip.write(dir + '/' + image)
+	zip.close()
+
 def log(str):
 	print "%s >>> %s" % (time.strftime("%x - %X", time.localtime()), str)
 	
