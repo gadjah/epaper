@@ -36,7 +36,7 @@ def main():
 	opener = urllib2.build_opener()
 	opener.addheaders = [('User-Agent', 'Mozilla/4.0 (compatible; MSIE 7.0b; Windows NT 6.0)')]	
 
-	mainPage = "http://epaper.%s.com/" % (web)
+	mainPage = "http://epaper.%s.com/main.html" % (web)
 	log(mainPage)
 	page = opener.open(mainPage)
 	html = page.read()
