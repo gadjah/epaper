@@ -38,7 +38,7 @@ def main():
     filePrefix = options.filePrefix
     zip = options.zip
     dir = os.path.normpath(options.dir) + '/'
-    
+    computerID = ''    
     cookie = cookielib.CookieJar() 
     opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookie), 
         urllib2.HTTPHandler(debuglevel=options.verbose))
@@ -50,7 +50,8 @@ def main():
         version=0, 
         name='RVKernel.User.UserGUID', 
         value='%s' % (options.guid), 
-        port=None, port_specified=False, 
+        port=None, 
+        port_specified=False, 
         domain='.%s.realviewusa.com' % (web), 
         domain_specified=True, 
         domain_initial_dot=True, 
@@ -65,6 +66,9 @@ def main():
         rfc2109=False), 
     request)  
     page = opener.open(request)
+    for ck in cookie:
+        if ck.name == 'computerid':
+            computerID = ck.value
     html = page.read()
     xml = re.compile("""contentCode = DoGetContent\(([^,]+),([^,]+),([^\)]+)\)""").findall(html)    
     for item in xml:
@@ -122,8 +126,8 @@ def main():
             outFile = '%s%s/%s_%s%s_%07d.jpg' % (dir, fDate, filePrefix, stringPage, fDate, x)
             j = "/webimages/page%07d_large.jpg" % (x)
             n = "/webimages/page%07d_large.png" % (x)
-            jHash = "%s%s%s%s%s%s%s" % (options.guid, sd, j, year, month, day, hour)
-            nHash = "%s%s%s%s%s%s%s" % (options.guid, sd, n, year, month, day, hour)
+            jHash = "%s%s%s%s%s%s%s" % (computerID, sd, j, year, month, day, hour)
+            nHash = "%s%s%s%s%s%s%s" % (computerID, sd, n, year, month, day, hour)
             imageJPG = Url + j  + '?h=' + hashlib.md5(jHash).hexdigest()
             imagePNG = Url + n  + '?h=' + hashlib.md5(nHash).hexdigest()
             threads.append(threading.Thread(target=downloader, args=(opener, outFile, s, imageJPG, imagePNG)))

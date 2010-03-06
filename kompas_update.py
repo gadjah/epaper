@@ -32,7 +32,7 @@ def main():
     filePrefix = options.filePrefix
     zip = options.zip
     dir = os.path.normpath(options.dir) + '/'
-    
+    computerID = ''    
     #proxy = urllib2.ProxyHandler({'http': 'www-proxy.com:8080'})
     cookie = cookielib.CookieJar() 
     opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookie), 
@@ -60,6 +60,9 @@ def main():
         rfc2109=False), 
     request)  
     page = opener.open(request)
+    for ck in cookie:
+        if ck.name == 'computerid':
+            computerID = ck.value 
     html = page.read()
     
     listXML = re.compile('<span class="teaserText"><a href="([^"]+)">([^<]+)</a></span>').findall(html)
@@ -131,8 +134,8 @@ def main():
                     log("Download %s" %(s))
                     j = "/webimages/page%07d_large.jpg" % (x)
                     n = "/webimages/page%07d_large.png" % (x)
-                    jHash = "%s%s%s%s%s%s%s" % (options.guid, sd, j, year, month, day, hour)
-                    nHash = "%s%s%s%s%s%s%s" % (options.guid, sd, n, year, month, day, hour)
+                    jHash = "%s%s%s%s%s%s%s" % (computerID, sd, j, year, month, day, hour)
+                    nHash = "%s%s%s%s%s%s%s" % (computerID, sd, n, year, month, day, hour)
                     jpgUrl = Url + j  + '?h=' + hashlib.md5(jHash).hexdigest()
                     pngUrl = Url + n  + '?h=' + hashlib.md5(nHash).hexdigest()
         
