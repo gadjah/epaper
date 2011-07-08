@@ -53,7 +53,7 @@ def main():
 	year = pageCount[0][6:10]
 		
 	fDate = "%s-%s-%s" %(year, month, date)
-    Url = "http://anax1a.pressmart.net/%s/PUBLICATIONS/MI/MI/%s/%s/%s/PagePrint/" % (web, year, month, date)	
+	Url = "http://anax1a.pressmart.net/%s/PUBLICATIONS/MI/MI/%s/%s/%s/PagePrint/" % (web, year, month, date)	
 	
 	if not os.path.exists(dir + fDate):
 		os.makedirs(dir + fDate)
