@@ -15,7 +15,7 @@ import optparse
 import pyPdf
 import threading
 
-web = "mediaindonesia"
+web = "bisnis"
 
 def main():
 	cmd = optparse.OptionParser()
@@ -38,10 +38,11 @@ def main():
 	opener = urllib2.build_opener()
 	opener.addheaders = [('User-Agent', 'Mozilla/4.0 (compatible; MSIE 7.0b; Windows NT 6.0)')]	
 
-	mainPage = "http://anax1a.pressmart.net/%s" % (web)
+	mainPage = "http://epaper.%s.com/default.aspx" % (web)
 	log(mainPage)
 	page = opener.open(mainPage)
 	html = page.read()
+	page.close()
 	
 	pageCount = re.compile("pagethumb/([^']+)").findall(html)
 	if not pageCount:
@@ -53,7 +54,7 @@ def main():
 	year = pageCount[0][6:10]
 		
 	fDate = "%s-%s-%s" %(year, month, date)
-	Url = "http://anax1a.pressmart.net/%s/PUBLICATIONS/MI/MI/%s/%s/%s/PagePrint/" % (web, year, month, date)	
+	Url = "http://epaper.%s.com/PUBLICATIONS/BISNISINDONESIA/BI/%s/%s/%s/PagePrint/" % (web, year, month, date)
 	
 	if not os.path.exists(dir + fDate):
 		os.makedirs(dir + fDate)
@@ -73,13 +74,13 @@ def main():
 	if m:
 		filePdf = "%s%s_%s.pdf" % (dir, filePrefix, fDate)
 		merge(dir + fDate, filePdf)
-				
+		
 	if zip:
 		zipFile = "%s%s_%s.zip" % (dir, filePrefix, fDate)
 		makezip(dir + fDate, zipFile)
 		
 	log("\n-")
-
+	
 def downloader(opener, url, filename, s):
 	s.acquire()
 	try:
@@ -98,7 +99,7 @@ def downloader(opener, url, filename, s):
 		page.close()
 	finally:
 		s.release()
-	
+
 def merge(dir, filename):
 	outPdf = pyPdf.PdfFileWriter()
 	log("Create %s" % (filename))
@@ -119,7 +120,8 @@ def makezip(dir, filename):
 	for pdf in os.listdir(dir):
 		zip.write(dir + '/' + pdf)
 	zip.close()
-		
+
+
 def log(str):
 	print "%s >>> %s" % (time.strftime("%x - %X", time.localtime()), str)
 	
