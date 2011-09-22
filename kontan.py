@@ -85,19 +85,20 @@ def main():
         if not iid:
             log("iid=0")
             sys.exit(1)
-        
-        dDate = re.compile("i:'([^']+)'").findall(html)
-        if not dDate:
-            log("date=0")
-            sys.exit(1)     
-        if '-' in dDate[0]:
-            fDate = "%s-%s-%s" % (dDate[0][-4:], str(getMonth(dDate[0][-8:-5])), dDate[0][0:2])
-        else:
-            fDate = "%s-%s-%s" % (dDate[0].split()[2], getMonth(dDate[0].split()[1]), getMonth(dDate[0].split()[0]))
         indexPage = "http://%s.realviewusa.com/global/loadconfig.aspx?fetch=2&i=&iguid=&xml&iid=%s&index=&rnd=0.1" % (web, iid[0])
         log(indexPage)
         page = opener.open(indexPage)
         html = page.read()
+        dDate = re.compile('issuedate="([^"]+)"').findall(html)
+        if not dDate:
+            log("date=0")
+            sys.exit(1)     
+        #if '-' in dDate[0]:
+        #    fDate = "%s-%s-%s" % (dDate[0][-4:], str(getMonth(dDate[0][-8:-5])), dDate[0][0:2])
+        #else:
+        #    fDate = "%s-%s-%s" % (dDate[0].split()[2], getMonth(dDate[0].split()[1]), getMonth(dDate[0].split()[0]))
+        
+        fDate = "%s-%s-%s" % (dDate[0][7:11], str(getMonth(dDate[0][0:3])), ("00" + dDate[0][4:6].strip())[-2:])
         pageCount = re.compile('pagecount="(\d+)"').findall(html)
         
         if not pageCount:
@@ -112,7 +113,6 @@ def main():
             
         Dir = re.sub("\s", '%20', stringDir[0])
         Url = "http://content.%s.realviewusa.com/djvu%s" % (web, Dir)
-    
         if not os.path.exists(dir + fDate):
             os.makedirs(dir + fDate)
         year = datetime.datetime.utcnow().year
@@ -172,7 +172,7 @@ def downloader(opener, filename, s, jpg=None, png=None):
                 imagePNG = Image.open(imageStringPNG)
                 A = imagePNG.convert('RGBA').split()[-1]
                 imageJPG.paste(imagePNG, A)
-                imageJPG.save(filename)
+                imageJPG.save(filename, quality=100)
                 imageStringJPG.close()
                 imageStringPNG.close()
         else:

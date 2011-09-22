@@ -70,7 +70,6 @@ def main():
         if ck.name == 'computerid':
             computerID = ck.value
     html = page.read()
-
     xml = re.compile('<span class="teaserText"><a href="([^"]+)">([^<]+)</a></span>').findall(html)
     del(xml[1:])
     for item in xml:
@@ -171,7 +170,7 @@ def downloader(opener, filename, s, jpg=None, png=None):
                 imagePNG = Image.open(imageStringPNG)
                 A = imagePNG.convert('RGBA').split()[-1]
                 imageComposite = Image.composite(imagePNG, imageJPG, A)
-                imageComposite.save(filename)
+                imageComposite.save(filename, quality=100)
                 imageStringJPG.close()
                 imageStringPNG.close()
         else:
