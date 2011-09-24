@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 """
-__version__ = "$Revision: 0.6  $"
-__date__ = "$Date: 2009/05/28 $"
+__version__ = "$Revision: 0.7 $"
+__date__ = "$Date: 2011/09/24 $"
 """
 
 import urllib2
