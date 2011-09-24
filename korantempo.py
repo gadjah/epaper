@@ -2,7 +2,7 @@
 
 """
 __version__ = "$Revision: 0.7 $"
-__date__ = "$Date: 2011/07/04 $"
+__date__ = "$Date: 2011/11/24 $"
 """
 
 import urllib2
@@ -13,6 +13,7 @@ import re
 import time
 import optparse
 import pyPdf
+import cookielib
 import threading
 
 web = "korantempo"
@@ -23,9 +24,15 @@ def main():
     cmd.add_option("-d", "--dir", dest="dir", default=web)
     cmd.add_option("-n", "--no-merge", action="store_false", dest="merge", default=True)
     cmd.add_option("-p", "--prefix", dest="filePrefix", default=web)
+    cmd.add_option("-q", "--password", dest="password")
+    cmd.add_option("-u", "--user", dest="user")
+    cmd.add_option("-v", "--verbose", action="store_true", dest="verbose", default=False)
     cmd.add_option("-z", "--zip", action="store_true", dest="zip", default=False)
     (options, args) = cmd.parse_args()
     
+    if not (options.user and options.password):
+        print "incorrect username or password"
+        sys.exit(1)
     if options.concurrent < 1 or options.concurrent > 10:
         concurrent = 1
     else:
@@ -34,24 +41,36 @@ def main():
     zip = options.zip
     dir = os.path.normpath(options.dir) + '/'
     m = options.merge
+    user = options.user
+    password = options.password
 
-    opener = urllib2.build_opener()
-    opener.addheaders = [('User-Agent', 'Mozilla/4.0 (compatible; MSIE 7.0b; Windows NT 6.0)')] 
+    cookie = cookielib.CookieJar()
+    opener = urllib2.build_opener(urllib2.HTTPRedirectHandler(), \
+        urllib2.HTTPCookieProcessor(cookie), urllib2.HTTPHandler(debuglevel=options.verbose))   
+    opener.addheaders = [('User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.5; rv:6.0.2) Gecko/20100101 Firefox/6.0.2')] 
 
     mainPage = "http://epaper.%s.com/default.aspx" % (web)
     log(mainPage)
     page = opener.open(mainPage)
     html = page.read()
-    page.close()
     
     pageCount = re.compile("pagethumb/([^']+)").findall(html)
     if not pageCount:
         log("pageCount=0")
         sys.exit(1)
-    
+
     date = pageCount[0][0:2]
     month = pageCount[0][3:5]
     year = pageCount[0][6:10]
+
+    data = 'strEmail=%s\r\nstrPassword=%s' % (user, password) 
+    loginPage = 'http://epaper.%s.com/ajax/EpaperLibrary.AjaxUtilsMethods,EpaperLibrary.ashx?_method=CheckLoginCredentialsNew&_session=rw' % (web)
+    request = urllib2.Request(loginPage, data)
+    page = opener.open(request)
+    html = page.read()
+    if not 'success' in html:
+        print "incorrect username or password"
+        sys.exit(1)
         
     fDate = "%s-%s-%s" %(year, month, date)
     Url = "http://epaper.%s.com/PUBLICATIONS/KT/KT/%s/%s/%s/PagePrint/" % (web, year, month, date)
@@ -73,6 +92,7 @@ def main():
         
     if m:
         filePdf = "%s%s_%s.pdf" % (dir, filePrefix, fDate)
+        print "Merge"
         merge(dir + fDate, filePdf)
         
     if zip:
@@ -93,7 +113,7 @@ def downloader(opener, url, filename, s):
                     return
         log("Download %s" % (filename))         
         pdf = page.read()
-        f = open(filename, "wb")
+        f = open(filename, "w")
         f.write(pdf)
         f.close()
         page.close()
@@ -127,4 +147,3 @@ def log(str):
     
 if __name__ == '__main__':
     main()
-
