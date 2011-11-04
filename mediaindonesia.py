@@ -18,7 +18,7 @@ import cookielib
 import threading
 
 web = "mediaindonesia"
-domain = "anax1a.pressmart.net"
+domain = "pmlseaepaper.pressmart.com"
 webpath = "MediaIndonesia"
 
 def main():
