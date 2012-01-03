@@ -16,7 +16,7 @@ import pyPdf
 import cookielib
 import threading
 
-web = "korantempo"
+web = "tempo"
 
 def main():
     cmd = optparse.OptionParser()
@@ -49,11 +49,12 @@ def main():
         urllib2.HTTPCookieProcessor(cookie), urllib2.HTTPHandler(debuglevel=options.verbose))   
     opener.addheaders = [('User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.5; rv:6.0.2) Gecko/20100101 Firefox/6.0.2')] 
 
-    mainPage = "http://epaper.%s.com/default.aspx" % (web)
+    #mainPage = "http://epaper.%s.co/default.aspx" % (web)
+    mainPage = "http://epaper.%s.co" % (web)
     log(mainPage)
     page = opener.open(mainPage)
     html = page.read()
-    
+   
     pageCount = re.compile("pagethumb/([^']+)").findall(html)
     if not pageCount:
         log("pageCount=0")
@@ -64,7 +65,7 @@ def main():
     year = pageCount[0][6:10]
 
     data = 'strEmail=%s\r\nstrPassword=%s' % (user, password) 
-    loginPage = 'http://epaper.%s.com/ajax/EpaperLibrary.AjaxUtilsMethods,EpaperLibrary.ashx?_method=CheckLoginCredentialsNew&_session=rw' % (web)
+    loginPage = 'http://epaper.%s.co/ajax/EpaperLibrary.AjaxUtilsMethods,EpaperLibrary.ashx?_method=CheckLoginCredentialsNew&_session=rw' % (web)
     request = urllib2.Request(loginPage, data)
     page = opener.open(request)
     html = page.read()
@@ -73,7 +74,7 @@ def main():
         sys.exit(1)
         
     fDate = "%s-%s-%s" %(year, month, date)
-    Url = "http://epaper.%s.com/PUBLICATIONS/KT/KT/%s/%s/%s/PagePrint/" % (web, year, month, date)
+    Url = "http://epaper.%s.co/PUBLICATIONS/KT/KT/%s/%s/%s/PagePrint/" % (web, year, month, date)
     
     if not os.path.exists(dir + fDate):
         os.makedirs(dir + fDate)
