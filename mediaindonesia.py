@@ -147,4 +147,5 @@ def log(str):
     print "%s >>> %s" % (time.strftime("%x - %X", time.localtime()), str)
     
 if __name__ == '__main__':
+
     main()
