@@ -106,7 +106,7 @@ def downloader(opener, url, filename, s):
             if page.headers.getheader('Content-Length'):
                 if long(page.headers.getheader('Content-Length')) == os.path.getsize(filename):
                     log("Skip %s" % (filename))
-                    pageUrl.close()
+                    page.close()
                     return
         log("Download %s" % (filename))         
         jpg = page.read()
