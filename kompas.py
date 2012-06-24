@@ -173,7 +173,8 @@ def downloader(opener, filename, s, jpg=None, png=None):
                 imageStringJPG.close()
                 imageStringPNG.close()
         else:
-            log("Skip %s" % (filename))
+            #log("Skip %s" % (filename))
+            pass
     finally:
         s.release()
         
