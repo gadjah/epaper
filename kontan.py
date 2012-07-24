@@ -70,15 +70,16 @@ def main():
         if ck.name == 'computerid':
             computerID = ck.value
     html = page.read()
-    xml = re.compile("""contentCode = DoGetContent\(([^,]+),([^,]+),([^\)]+)\)""").findall(html)    
+    #xml = re.compile("""contentCode = DoGetContent\(([^,]+),([^,]+),([^\)]+)\)""").findall(html)
+    xml = re.compile('&redirect=true">([^<]+)</a>').findall(html)
     for item in xml:
-        indexPage = "http://%s.realviewusa.com/?xml=%s.xml" % (web, item[1].strip('\'"'))
+        indexPage = "http://%s.realviewusa.com/?xml=%s.xml" % (web, re.sub(web +'|\s|Daily', '', item).lower())
         if indexPage != mainPage:
             log(indexPage)
             page = opener.open(indexPage)
             html = page.read()
 
-        stringPage = re.sub(web.title() + " |\S+ Daily|Bagian |'|\"", "", item[2]) 
+        stringPage = re.sub(web.title() + " |Daily|Bagian |'|\|", "", item) 
         if stringPage:
             stringPage = re.sub("\s", "_", stringPage).lower() + "_"
         iid = re.compile('iid:([^,]+)').findall(html)
