@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 """
-__version__ = "$Revision: 0.7 $"
-__date__ = "$Date: 2011/11/24 $"
+__version__ = "$Revision: 0.7a $"
+__date__ = "$Date: 2012/10/09 $"
 """
 
 import urllib
@@ -52,7 +52,7 @@ def main():
         urllib2.HTTPCookieProcessor(cookie), urllib2.HTTPHandler(debuglevel=options.verbose))   
     opener.addheaders = [('User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.5; rv:6.0.2) Gecko/20100101 Firefox/6.0.2')] 
 
-    mainPage = "http://%s/%s" % (domain, web)
+    mainPage = "http://%s/%s/default.aspx" % (domain, web)
     log(mainPage)
     page = opener.open(mainPage)
     html = page.read()
@@ -61,7 +61,7 @@ def main():
     if not pageCount:
         log("pageCount=0")
         sys.exit(1)
-    
+
     date = pageCount[0][0:2]
     month = pageCount[0][3:5]
     year = pageCount[0][6:10]
@@ -74,13 +74,13 @@ def main():
     if not 'success' in html:
         print "incorrect username or password"
         sys.exit(1)
-       
+
     fDate = "%s-%s-%s" %(year, month, date)
     Url = "http://%s/%s/PUBLICATIONS/MI/MI/%s/%s/%s/PagePrint/" % (domain, web, year, month, date)
-    
+
     if not os.path.exists(dir + fDate):
         os.makedirs(dir + fDate)
-    
+
     threads = []
     s = threading.Semaphore(concurrent)
     for x in range(0, len(pageCount)):
@@ -92,15 +92,15 @@ def main():
 
     for thread in threads:
         thread.join()
-        
+
     if m:
         filePdf = "%s%s_%s.pdf" % (dir, filePrefix, fDate)
         merge(dir + fDate, filePdf)
-                
+
     if zip:
         zipFile = "%s%s_%s.zip" % (dir, filePrefix, fDate)
         makezip(dir + fDate, zipFile)
-        
+
     log("\n-")
 
 def downloader(opener, url, filename, s):
@@ -113,7 +113,7 @@ def downloader(opener, url, filename, s):
                 if long(page.headers.items()[0][1]) == os.path.getsize(filename):
                     log("Skip %s" % (filename))
                     return
-        log("Download %s" % (filename))         
+        log("Download %s" % (filename))
         pdf = page.read()
         f = open(filename, "w")
         f.write(pdf)
@@ -121,7 +121,7 @@ def downloader(opener, url, filename, s):
         page.close()
     finally:
         s.release()
-    
+
 def merge(dir, filename):
     outPdf = pyPdf.PdfFileWriter()
     log("Create %s" % (filename))
@@ -142,10 +142,10 @@ def makezip(dir, filename):
     for pdf in os.listdir(dir):
         zip.write(dir + '/' + pdf)
     zip.close()
-        
+
 def log(str):
     print "%s >>> %s" % (time.strftime("%x - %X", time.localtime()), str)
-    
+
 if __name__ == '__main__':
 
     main()
