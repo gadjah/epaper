@@ -65,13 +65,15 @@ def main():
     page = opener.open(loginPage, data)
     html = page.read()
 
-    pageCount = re.compile('/images/flippingbook/PR/(\d+)/(\w+)/(\d+)/\d+_zoom_(\d+).jpg').findall(html)
+    #pageCount = re.compile('/images/flippingbook/PR/(\d+)/(\w+)/(\d+)/\d+_zoom_(\d+).jpg').findall(html)
+    pageCount = re.compile('/images/flippingbook/PR/(\d+)/([^\/]+)/(\d+)/\d+_zoom_(\d+).jpg').findall(html)
     if not pageCount:
         log("pageCount=0")
         sys.exit(1)
     
     date = pageCount[0][2][0:2]
-    month = getMonth(pageCount[0][1].capitalize())
+    #month = getMonth(pageCount[0][1].capitalize())
+    month = getMonth((pageCount[0][1]).split()[0].capitalize())
     year = pageCount[0][0]
         
     fDate = "%s-%s-%s" %(year, month, date)
@@ -86,7 +88,7 @@ def main():
         #x = '(2009', 'Mei', '030509', '01')
         outFile = '%s%s/%s_%s_%s.jpg' % (dir, fDate, filePrefix, fDate, x[3])
         page = "%s/%s/%s/%s_zoom_%s.jpg" % (x[0], x[1], x[2], x[2], x[3])
-        pageUrl = Url + page
+        pageUrl = Url + urllib.quote(page)
         threads.append(threading.Thread(target=downloader, args=(opener, pageUrl, outFile, s)))
         threads[-1].start()
         
