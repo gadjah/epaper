@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 """
-__version__ = "$Revision: 0.7a $"
-__date__ = "$Date: 2012/10/09 $"
+__version__ = "$Revision: 0.8 $"
+__date__ = "$Date: 2013/04/30 $"
 """
 
 import urllib
@@ -13,13 +13,14 @@ import zipfile
 import re
 import time
 import optparse
+import hashlib
 import pyPdf
 import cookielib
 import threading
 
 web = "mediaindonesia"
 domain = "pmlseaepaper.pressmart.com"
-webpath = "MediaIndonesia"
+webpath = "Mediaindonesia"
 
 def main():
     cmd = optparse.OptionParser()
@@ -49,25 +50,37 @@ def main():
 
     cookie = cookielib.CookieJar()
     opener = urllib2.build_opener(urllib2.HTTPRedirectHandler(), \
-        urllib2.HTTPCookieProcessor(cookie), urllib2.HTTPHandler(debuglevel=options.verbose))   
-    opener.addheaders = [('User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.5; rv:6.0.2) Gecko/20100101 Firefox/6.0.2')] 
+        urllib2.HTTPCookieProcessor(cookie), urllib2.HTTPHandler(debuglevel=options.verbose))
+    opener.addheaders = [('User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.5; rv:6.0.2) Gecko/20100101 Firefox/6.0.2')]
 
-    mainPage = "http://%s/%s/default.aspx" % (domain, web)
+    mainPage = "http://%s/%s/index.aspx" % (domain, web)
     log(mainPage)
     page = opener.open(mainPage)
     html = page.read()
 
-    pageCount = re.compile("pagethumb/([^']+)").findall(html)
+    calDates = re.compile("var CalendarDates = '([^']+)'").findall(html);
+    if len(calDates) < 0:
+        print 'CalDates: 0'
+        sys.exit(1)
+    cDate = time.strftime('%d_%m_%Y', time.strptime(calDates[0].split(',')[-1], '%d-%m-%Y'))
+    dDate = time.strftime('%Y/%m/%d', time.strptime(calDates[0].split(',')[-1], '%d-%m-%Y'))
+    xmlPage = 'http://%s/%s/PUBLICATIONS/MI/MI/%s/DayIndex/%s.xml' % (domain, webpath, dDate, cDate)
+    log(xmlPage)
+    page = opener.open(xmlPage)
+    html = page.read()
+
+    pageCount = re.compile("<Page name='([^']+)'").findall(html)
     if not pageCount:
         log("pageCount=0")
         sys.exit(1)
 
-    date = pageCount[0][0:2]
-    month = pageCount[0][3:5]
-    year = pageCount[0][6:10]
+    date = cDate[0:2]
+    month = cDate[3:5]
+    year = cDate[6:10]
 
-    data = 'strEmail=%s\r\nstrPassword=%s' % (user, password) 
-    loginPage = 'http://%s/%s/ajax/EpaperLibrary.AjaxUtilsMethods,EpaperLibrary.ashx?_method=CheckLoginCredentialsNew&_session=rw' % (domain, webpath)
+    data = 'strEmail=%s\r\nstrPassword=%s' % (user, password)
+    loginPage = 'http://%s/%s/ajax/epaperAjaxMethods.AjaxUtilsMethods,ePaperAjaxMethods.ashx?_method=CheckLoginCredentials&_session=rw' % (domain, webpath)
+
     request = urllib2.Request(loginPage, data)
     page = opener.open(request)
     html = page.read()
@@ -76,17 +89,17 @@ def main():
         sys.exit(1)
 
     fDate = "%s-%s-%s" %(year, month, date)
-    Url = "http://%s/%s/PUBLICATIONS/MI/MI/%s/%s/%s/PagePrint/" % (domain, web, year, month, date)
+    Url = "http://%s/%s/PUBLICATIONS/MI/MI/%s/PagePrint/" % (domain, web, dDate)
 
     if not os.path.exists(dir + fDate):
         os.makedirs(dir + fDate)
 
     threads = []
     s = threading.Semaphore(concurrent)
+    md5str = 'pressguess'
     for x in range(0, len(pageCount)):
         outFile = '%s%s/%s_%s_%s.pdf' % (dir, fDate, filePrefix, fDate, pageCount[x][11:14])
-        page = "%s.pdf" % (pageCount[x][0:14])
-        pageUrl = Url + page
+        pageUrl = Url + pageCount[x] + '_' + hashlib.md5(pageCount[x] + "_" + md5str).hexdigest() + ".pdf"
         threads.append(threading.Thread(target=downloader, args=(opener, pageUrl, outFile, s)))
         threads[-1].start()
 
@@ -137,8 +150,8 @@ def merge(dir, filename):
             outStream.close()
 
 def makezip(dir, filename):
-    log("Create %s" % (filename)) 
-    zip = zipfile.ZipFile(filename, mode="w", compression=zipfile.ZIP_DEFLATED) 
+    log("Create %s" % (filename))
+    zip = zipfile.ZipFile(filename, mode="w", compression=zipfile.ZIP_DEFLATED)
     for pdf in os.listdir(dir):
         zip.write(dir + '/' + pdf)
     zip.close()
