@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 """
-__version__ = "$Revision: 0.8 $"
-__date__ = "$Date: 2012/06/24 $"
+__version__ = "$Revision: 0.9 $"
+__date__ = "$Date: 2013/06/25 $"
 """
 
 from PIL import Image
@@ -42,17 +42,17 @@ def main():
     sdate = None
 
     if options.sdate:
-        try: 
+        try:
             sdate = datetime.strptime(options.sdate,
                    '%Y-%m-%d')
         except ValueError:
             log("Date does not match format YYYY-MM-DD")
-            sys.exit(1) 
+            sys.exit(1)
 
-    cookie = cookielib.CookieJar() 
-    opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookie), 
+    cookie = cookielib.CookieJar()
+    opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookie),
         urllib2.HTTPHandler(debuglevel=options.verbose))
-    opener.addheaders = [('User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.5; rv:6.0.2) Gecko/20100101 Firefox/6.0.2')] 
+    opener.addheaders = [('User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.5; rv:6.0.2) Gecko/20100101 Firefox/6.0.2')]
     mainPage = "http://%s.realviewusa.com/?xml=%s.xml" % (web, web)
     log(mainPage)
     page = opener.open(mainPage)
@@ -65,37 +65,50 @@ def main():
     xml = re.compile('<span class="teaserText"><a href="([^"]+)">([^<]+)</a></span>').findall(html)
     #?!/
     del(xml[1:])
+    params = {'pid': '', 'iid': '', 'xml_config': '' }
     for item in xml:
         if item[0] != mainPage:
             log(item[0])
             page = opener.open(item[0])
             html = page.read()
 
-        stringPage = re.sub("\S+ Daily|Bagian ", "", item[1]) 
+        stringPage = re.sub("\S+ Daily|Bagian ", "", item[1])
         if stringPage:
             stringPage = re.sub("\s", "_", stringPage).lower() + "_"
-            
-        iid = re.compile('iid:([^,]+)').findall(html)
-        if not iid:
-            log("iid=0")
+        t = ''
+        for p in params:
+            t = re.compile('%s:([^,]+)' % p).findall(html)
+            if t:
+                params[p] = t[0].replace("'", '')
+            else:
+                log("%s=%s" % (p, t))
+                sys.exit(1)
+        ipath = re.compile("i_path = '/djvu/([^']+)'").findall(html)
+        if not len(ipath):
+            log("ipath=0")
             sys.exit(1)
 
-        indexPage = "http://%s.realviewusa.com/global/loadconfig.aspx?fetch=2&i=&iguid=&xml&iid=%s&index=&rnd=0.1" % (web, iid[0])
+        indexPage = "http://data.cdn.realviewdigital.com/rvimageserver/%s/loadconfig.aspx?pid=%s&fetch=1&i=&iguid=&xml=%s&iid=%s&index=index.djvu&forscript=true&ver=v4" % \
+             (ipath[0], params['pid'], params['xml_config'], params['iid'])
+
+        #indexPage = "http://%s.realviewusa.com/global/loadconfig.aspx?fetch=2&i=&iguid=&xml&iid=%s&index=&rnd=0.1" % (web, iid[0])
         log(indexPage)
         page = opener.open(indexPage)
         html = page.read()
-        
+
         ss = re.findall('<BackIssue id="([^"]+)" sysname="([^"]+)" name="([^"]+)" path="([^"]+)" issuedate="([^"]+)', html)
         if sdate:
-            iid = [] 
+            iid = []
             for s in ss:
-                if datetime.strptime(re.sub("\s{2,}", " ", s[4]), "%b %d %Y %H:%MAM").strftime("%Y-%m-%d") == sdate.strftime("%Y-%m-%d"): 
-                    iid.append(s[0])
+                if datetime.strptime(re.sub("\s{2,}", " ", s[4]), "%b %d %Y %H:%MAM").strftime("%Y-%m-%d") == sdate.strftime("%Y-%m-%d"):
+                    iid.append(s)
                     break
             if not iid:
                 log("Date does not match")
                 sys.exit(1)
-            indexPage = "http://%s.realviewusa.com/global/loadconfig.aspx?fetch=2&i=&iguid=&xml&iid=%s&index=&rnd=0.1" % (web, iid[0])
+            indexPage = "http://data.cdn.realviewdigital.com/rvimageserver/%s/loadconfig.aspx?pid=%s&fetch=1&i=&iguid=&xml=%s&iid=%s&index=index.djvu&forscript=true&ver=v4" % \
+                (iid[0][3][1:], params['pid'], params['xml_config'], iid[0][0])
+            #indexPage = "http://%s.realviewusa.com/global/loadconfig.aspx?fetch=2&i=&iguid=&xml&iid=%s&index=&rnd=0.1" % (web, iid[0])
             page = opener.open(indexPage)
             html = page.read()
         else:
@@ -106,7 +119,7 @@ def main():
         pageCount = re.compile('pagecount="(\d+)"').findall(html)
         if not pageCount:
             log("pageCount=0")
-            sys.exit(1) 
+            sys.exit(1)
 
         Dir = re.sub("\s", '%20', stringDir)
         Url = "http://content.%s.realviewusa.com/djvu%s" % (web, Dir)
@@ -116,11 +129,11 @@ def main():
         month = datetime.utcnow().month
         day = datetime.utcnow().day
         hour = datetime.utcnow().hour
-        sd = '/djvu' + stringDir.lower()  
+        sd = '/djvu' + stringDir.lower()
         threads = []
         s = threading.Semaphore(concurrent)
         for x in range(1, int(pageCount[0]) + 1):
-            outFile = '%s%s/%s_%s%s_%07d.jpg' % (dir, fdate, filePrefix, stringPage, fdate, x)  
+            outFile = '%s%s/%s_%s%s_%07d.jpg' % (dir, fdate, filePrefix, stringPage, fdate, x)
             j = "/webimages/page%07d_large.jpg" % (x)
             n = "/webimages/page%07d_large.png" % (x)
             jHash = "%s%s%s%s%s%s%s" % (computerID, sd, j, year, month, day, hour)
@@ -129,16 +142,16 @@ def main():
             imagePNG = Url + n  + '?h=' + hashlib.md5(nHash).hexdigest()
             threads.append(threading.Thread(target=downloader, args=(opener, outFile, s, imageJPG, imagePNG)))
             threads[-1].start()
-            
+
         for thread in threads:
             thread.join()
-            
+
         if zip:
             zipFile = "%s%s_%s%s.zip" % (dir, filePrefix, stringPage, fdate)
             makezip(dir, fdate, filePrefix, stringPage, zipFile, xrange(1, int(pageCount[0]) + 1))
 
     log("\n-")
-    
+
 def downloader(opener, filename, s, jpg=None, png=None):
     s.acquire()
     try:
@@ -153,7 +166,7 @@ def downloader(opener, filename, s, jpg=None, png=None):
             except urllib2.HTTPError, e:
                 imageStringJPG = ""
                 log("Error %s, %s" % (e, jpg.split('/')[-1]))
-            
+
             try:
                 page = opener.open(png)
                 dPNG = page.read()
@@ -163,7 +176,7 @@ def downloader(opener, filename, s, jpg=None, png=None):
             except urllib2.HTTPError, e:
                 imageStringPNG = ""
                 log("Error %s, %s" % (e, png.split('/')[-1]))
-                
+
             if imageStringJPG and imageStringPNG:
                 imageJPG = Image.open(imageStringJPG)
                 imagePNG = Image.open(imageStringPNG)
@@ -177,10 +190,10 @@ def downloader(opener, filename, s, jpg=None, png=None):
             pass
     finally:
         s.release()
-        
+
 def makezip(dir, fdate, filePrefix, stringPage, filename, pageCount):
-    log("Create %s" % (filename)) 
-    zip = zipfile.ZipFile(filename, mode="w", compression=zipfile.ZIP_DEFLATED) 
+    log("Create %s" % (filename))
+    zip = zipfile.ZipFile(filename, mode="w", compression=zipfile.ZIP_DEFLATED)
     for item in pageCount:
         outFile = '%s%s/%s_%s%s_%07d.jpg' % (dir, fdate, filePrefix, stringPage, fdate, item)
         try:
@@ -193,6 +206,6 @@ def log(str):
     print "%s >>> %s" % (time.strftime("%x - %X", time.localtime()), str)
 
 
-    
+
 if __name__ == '__main__':
     main()
